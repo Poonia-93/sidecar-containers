@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sidecar-containers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sidecar-containers
+  template:
+    metadata:
+      labels:
+        app: sidecar-containers
+    spec:
+      containers:
+        - name: app-main
+          image: rahulpoonia20793/sidecarcontainers:latest
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: log-volume
+              mountPath: /var/log
+        - name: nginx-sidecar
+          image: nginx:latest
+          volumeMounts:
+            - name: nginx-conf-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          ports:
+            - containerPort: 80
+        - name: log-scrapper-sidecar
+          image: alpine:latest
+          args: [/bin/sh, -c, 'tail -n+1 -F /var/log/logs.txt']
+          volumeMounts:
+          - name: log-volume
+            mountPath: /var/log
+      volumes:
+        - name: nginx-conf-volume
+          configMap:
+            name: nginx-configmap
+        - name: log-volume
+          emptyDir: {}
+
